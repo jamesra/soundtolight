@@ -79,13 +79,6 @@ def get_freq_powers_by_range(spectrum: np.ndarray, range_cutoffs: np.ndarray[int
     #print(f'n: {num_groups} {range_cutoffs}')
     for i in range(0, num_groups):
         out[i] = np.sum(spectrum[int(range_cutoffs[i]):int(range_cutoffs[i + 1])])
-        # if i == 6:
-        #     s = spectrum[int(range_cutoffs[i]):int(range_cutoffs[i + 1])]
-        #     min_s = np.min(s)
-        #     max_s = np.max(s)
-        #     imax = np.argmax(s)
-        #     print(f'i_max: {imax} r: {range_cutoffs[i]}:{range_cutoffs[i+1]} min: {min_s:0.2f} max: {max_s:0.2f} sum: {out[i]:0.2f} s: {spectrum[int(range_cutoffs[i]):int(range_cutoffs[i + 1])]}')
-        #print(f"range cutoffs: {int(range_cutoffs[i])}:{int(range_cutoffs[i+1])} {spectrum[int(range_cutoffs[i]):int(range_cutoffs[i+1])]}")
 
     return out
 

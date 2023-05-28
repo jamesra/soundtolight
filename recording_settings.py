@@ -1,3 +1,4 @@
+
 class RecordingSettings():
     _sample_size: int #Must be a power of two
     _sample_rate: int
@@ -19,9 +20,9 @@ class RecordingSettings():
     def max_detectable_frequency(self) -> int:
         return self._sample_rate / 2.0
 
-    def __init__(self, max_freq_hz: int, frequency_cutoff: int, sample_size_exp: int):
+    def __init__(self, sampling_freq_hz: int, frequency_cutoff: int, sample_size_exp: int):
         self._sample_size = 1 << sample_size_exp
-        self._sample_rate = max_freq_hz * 2
+        self._sample_rate = sampling_freq_hz * 2
         self._freq_cutoff = frequency_cutoff
 
         if self._freq_cutoff > self.max_detectable_frequency:
