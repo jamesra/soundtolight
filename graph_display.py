@@ -49,9 +49,9 @@ class GraphDisplay(IDisplay):
         #self.pixel_indexer = self.default_row_column_indexer if row_column_indexer is None else row_column_indexer
         self._range_indicies = None
         self._group_power = None
-        self.pixel_map = self.build_pixel_map()
+        self._pixel_map = self._build_pixel_map()
 
-    def build_pixel_map(self):
+    def _build_pixel_map(self):
         '''
         Create a map to move each pixel up one row.  This is considerably faster than calling a function
         for each pixel
@@ -66,20 +66,25 @@ class GraphDisplay(IDisplay):
 
         return tuple(col_map)
 
+    def _build_range_indicies(self, spectrum_len):
+        if self.settings.log_scale:
+            range = log_range(spectrum_len, self.num_total_groups)
+        else:
+            range = linear_range(spectrum_len, self.num_total_groups)
+
+        range_indicies = float_to_indicies(range)
+        range_indicies = space_indicies(range_indicies)
+        print(f"Range indicies: {range_indicies} nEntries: {len(range_indicies)}")
+        return range_indicies
+
     def show(self, power_spectrum: np.array):
+        # The first time this function is called we need to calculate the range indicies used for each group
+        # Having the range indicies pre-calculated allows all later calls to execute faster and improve
+        # display time
         if self._range_indicies is None:
-            if self.settings.log_scale:
-                range = log_range(len(power_spectrum), self.num_total_groups)
-            else:
-                range = linear_range(len(power_spectrum), self.num_total_groups)
+            self._range_indicies = self._build_range_indicies(len(power_spectrum))
 
-            self._range_indicies = float_to_indicies(range)
-            self._range_indicies = space_indicies(self._range_indicies)
-            print(f"Range indicies: {self._range_indicies} nEntries: {len(self._range_indicies)}")
-
-        #std_spectrum = np.std(power_spectrum[128:])
-        #print(f'std: {std_spectrum:0.3f}')
-
+        # Create a histogram of power by
         self._group_power = get_freq_powers_by_range(power_spectrum,
                                                      self._range_indicies,
                                                      out=self._group_power)
@@ -98,8 +103,11 @@ class GraphDisplay(IDisplay):
             if i + 1 >= len(self._range_indicies):
                 break
 
+            # Duplicate the previous columns output if there is no range available for this column
+            # This is not used when there are enough columns to display  or if the space_indicies is
+            # used on the _range_indicies
             while self._range_indicies[i] == self._range_indicies[i+1]:
-                i += 1  #Duplicate the previous columns output
+                i += 1
                 if i + 1 >= len(self._range_indicies):
                     break
 
@@ -110,33 +118,39 @@ class GraphDisplay(IDisplay):
 
             #print(f"iCol: {i} Power: {self._group_power[i]}")
 
-            min_val = self.last_min_group_power[i] * 1.05 #Use the last min/max value before updating them
-            max_val = self.last_max_group_power[i] * 0.95
-            self.last_min_group_power[i] = min(self.last_min_group_power[i] * 1.0005, self._group_power[i], self._mean_group_power_ema[i].ema_value) #Slowly decay min/max
-            self.last_max_group_power[i] = max(self.last_max_group_power[i] * .9995, self._group_power[i], self._mean_group_power_ema[i].ema_value)
+            # Use the min/max values from the last loop.  We are comparing the new power spectrum to the past, not to
+            # its current value.
+            min_val = self.last_min_group_power[i] #* 1.05 #Use the last min/max value before updating them
+            max_val = self.last_max_group_power[i] * 0.99
 
+            #There is some magic here.  The device exists in an environment with variable amount of noise.  We want the
+            #display to be relative to the ambient noise level.  So we track the min/max values, but have them slowly
+            #decay to the mean power level.  We also use the current group power to adjust the min/max if they exceed
+            #the current min/max values.
+            self.last_min_group_power[i] = min(self.last_min_group_power[i] * 1.0001, self._group_power[i], self._mean_group_power_ema[i].ema_value) #Slowly decay min/max
+            self.last_max_group_power[i] = max(self.last_max_group_power[i] * .999, self._group_power[i], self._mean_group_power_ema[i].ema_value)
+
+            #Rarely, (at startup), we have an identical min/max value.  For this case we do not light any column LEDs
             if min_val == max_val:
-                continue #Do not display since we don't have a range for the graph yet
+                norm_value = 0
+            else:
+                norm_value = (self._group_power[i] - min_val) / (max_val - min_val)
+                norm_value = clip(norm_value)
 
-            #The second-to-last column of lights is not to be trusted.  It must be watched.
-            #if i == 6:
-            #    print(f'{i_col} val: {self._group_power[i]} min: {self.last_min_group_power[i]} max: {self.last_max_group_power[i]}')
-
-            norm_value = (self._group_power[i] - min_val) / (max_val - min_val)
-            norm_value = clip(norm_value)
-
-            #Tuning the line below can change how tall columns of lights appear.
+            #Calculate how many LEDs in the column will be illuminated
             num_leds = int(math.ceil(self.num_rows * norm_value))
             if num_leds > self.num_rows:
                 num_leds = self.num_rows
 
+            #Convert the power to an LED color.  To do this we determine which entry in the color lookup table is used.
             i_range, norm_value = map_power_to_range(self._group_power[i], min_val, max_val)
             neo_color = map_normalized_value_to_color(normalized_value=norm_value, colormap_index=i_range, color_map=None)
-            #print(f'{i_range} {norm_value} color: {neo_color}')
-            col_map = self.pixel_map[i_col]
+
+            #Light each pixel in the column.  Look up the pixel's index, scale top pixel brightness according to normalized
+            # value and set all pixels below the top to full brightness
+            col_map = self._pixel_map[i_col]
             for i_row in range(0, num_leds):
                 i_pixel = col_map[i_row]
-                #i_pixel = self.pixel_indexer(i_row, i_col)
                 if i_row == num_leds - 1: #Dim the highest point of the bar graph according to normalized value to simulate extra range
                     self.pixels[i_pixel] = map_float_color_to_neopixel_color(neo_color, norm_value)
                 else:
@@ -144,10 +158,10 @@ class GraphDisplay(IDisplay):
 
                 #print(f'{i_col},{i_row}: num_leds {num_leds} norm_val: {norm_value} neo_color: {neo_color} pix: {self.pixels[i_pixel]}')
 
+            # Any pixels not illuminated are now turned off
             for i_row in range(num_leds, self.num_rows):
                 i_pixel = col_map[i_row]
-                #i_pixel = self.pixel_indexer(i_row, i_col)
-                #print(f'col: clear {i_col} row: {i_row} i_pix: {i_pixel} num_leds: {num_leds}')
                 self.pixels[i_pixel] = (0, 0, 0)
 
+        #Send the all pixel values to the NeoPixel display
         self.pixels.show()

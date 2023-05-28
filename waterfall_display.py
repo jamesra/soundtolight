@@ -44,13 +44,18 @@ class WaterfallDisplay(IDisplay):
         self.pixel_indexer = settings.indexer
         self._range_indicies = None
         self._group_power = None
-        self.move_up_one_row_map = self.build_move_pixel_map()
+        self.move_up_one_row_map = self._build_move_pixel_map()
 
         self._mean_group_power_ema = []
         for i in range(0, self.num_cols):
             self._mean_group_power_ema.append(ema.EMA(500, 1.5))
 
-    def move_display_up_one_row(self):
+    def _move_display_up_one_row(self) -> None:
+        '''
+        A helper function to move each row in the waterfall one step
+        :return:
+        '''
+
         for i_row in range(self.num_rows-2, -1, -1):
             col_map = self.move_up_one_row_map[i_row]
             for i_col in range(0, self.num_cols):
@@ -61,10 +66,10 @@ class WaterfallDisplay(IDisplay):
                 #i_target = self.pixel_indexer(i_row+1, i_col)
                 #self.pixels[i_target] = self.pixels[i_source]
 
-    def build_move_pixel_map(self):
+    def _build_move_pixel_map(self) -> tuple[tuple[int, int]]:
         '''
-        Create a map to move each pixel up one row.  This is considerably faster than calling a function
-        for each pixel
+        Create a lookup map to move each pixel up one row.  This is considerably faster than calling a function
+        for each pixel to calculate an index
         '''
         row_map = []
         for i_row in range(0, self.num_rows-1):
@@ -93,7 +98,7 @@ class WaterfallDisplay(IDisplay):
         self._group_power = self._group_power * self._group_power
 
         #First, take all old pixel values, and move them up one row, except for the last row, which steps off the display
-        self.move_display_up_one_row()
+        self._move_display_up_one_row()
 
         #next, write the new row of columns on the bottom row
         #print(f'n_groups: {len(group_power)} n_cutoff: {self.num_cutoff_groups}')

@@ -39,14 +39,10 @@ sampling_settings = {
     "Highs": RecordingSettings(sampling_freq_hz=22000, frequency_cutoff=11000, sample_size_exp=10),
 }
 
-#This combo is a good starting point
-#sample_settings = sampling_settings["Broad Frequency"]
-
 sample_settings = sampling_settings["High-Mids"]
 
 MIC_PIN = board.A1
 
-# pixels = neopixel.NeoPixel(board.NEOPIXEL, n=NUM_NEOS, brightness=0.2, auto_write=False)
 pixels = neopixel.NeoPixel(board.D10, n=8*32, brightness=0.05, auto_write=False)
 pixels_featherwing = neopixel.NeoPixel(board.D6, n=4*8, brightness=0.05, auto_write=False)
 

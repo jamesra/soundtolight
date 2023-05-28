@@ -69,16 +69,21 @@ def space_indicies(input: np.array):
     return spaced_input
 
 def get_freq_powers_by_range(spectrum: np.ndarray, range_cutoffs: np.ndarray[int], out: np.ndarray[float] | None = None):
-    #print(f'{range_cutoffs} out: {out}')
+    '''
+    Using a pre-calculated set of indicies for each range return the summed power for each group
+    :param spectrum:
+    :param range_cutoffs:
+    :param out:
+    :return:
+    '''
     num_groups = len(range_cutoffs) - 1
     if out is None:
         out = np.zeros((num_groups))  # Create a place to store the sum'ed power of each frequency range
     elif len(out) != num_groups:
         raise ValueError("Output array has the wrong shape")
 
-    #print(f'n: {num_groups} {range_cutoffs}')
     for i in range(0, num_groups):
-        out[i] = np.sum(spectrum[int(range_cutoffs[i]):int(range_cutoffs[i + 1])])
+        out[i] = np.sum(spectrum[range_cutoffs[i]:range_cutoffs[i + 1]])
 
     return out
 
@@ -108,6 +113,12 @@ def map_normalized_value_to_color(normalized_value: float, colormap_index: int, 
     :param color_map: a colormap that multiples the value, after normalizing it within its range, to a color
     :return: A tuple of three integers, mapping RGB, with 0 representing OFF and 255 representing fully ON
     '''
+    if colormap_index is None:
+        raise ValueError('colormap_index must not be None')
+
+    if normalized_value is None:
+        raise ValueError('normalized_value must not be None')
+
     color_map = default_base_color if color_map is None else color_map
     if colormap_index >= len(color_map):
         raise ValueError("Number of range_cutoffs and number of color_map entries must match.")
@@ -134,7 +145,7 @@ def map_power_to_range(value: float, min_val: float, max_val: float, range_cutof
     range_cutoffs = default_range_cutoffs if range_cutoffs is None else range_cutoffs
     range = max_val - min_val
     if range == 0:
-        return None, None
+        return 0, 0
 
     value = (value - min_val) / range
     #print(f'value -> {value}')
