@@ -55,6 +55,7 @@ display_options = (
 )
 
 
+
 async def Run():
     #######################################################
     # Use reversing_row_column_indexer if your NeoPixels
@@ -103,6 +104,8 @@ async def Run():
     # knob on the speaker.)
     max_buffer_ema = ema.EMA(num_samples=500, smooth=1.5)
 
+    mean_buffer_ema = ema.EMA(num_samples=1000, smooth=1.0)
+
     #The best results I obtained experimenting with this code was to have a high sampling rate (~22,000 Hertz) and then
     #eliminating high frequencies from the data.  This seems counter-intuitive, why collect the high frequencies if
     #we just throw them away?  The reason is I use a log axis for several displays.  This means more columns are devoted
@@ -118,12 +121,19 @@ async def Run():
     frequencies = recording.get_frequencies(sample_settings)
     max_freq_index = recording.get_frequency_index(frequencies, sample_settings.frequency_cutoff)
 
+    hamming_filter_len = int(sample_settings.sample_size / (1 << 6))
+    hamming_filter = recording.calculate_hamming_filter(hamming_filter_len)
+    reversed_hamming_filter = hamming_filter[::-1]
+    print(f'Reverse filter: {reversed_hamming_filter}')
+
     print(f'max freq index: {max_freq_index}')
 
     max_buffer_ema.add(np.max(sample_buffer))
     new_buffer_task = None #The async task to collect more data
     new_buffer_task = asyncio.create_task(
         record_sample_array(mic_adc_bufferio, sample_settings.sample_size, sample_rate=sample_settings.sample_rate, buffer=mic_buffer))
+
+    buffer_median = None
     while True:
         ###################
         # Sample Collection
@@ -143,8 +153,20 @@ async def Run():
         #Convert to a numpy.array
         sample_buffer = np.array(mic_buffer)
 
+        if buffer_median is None:
+            buffer_median = int(round(np.mean(sample_buffer)))
+
+        mean_buffer_ema.add(sample_buffer[0]) #Add two essentially random values from the most recent recording
+        mean_buffer_ema.add(sample_buffer[-1]) #Add two essentially random values from the most recent recording
+
         #Center the floating point sample buffer so the value of 0 represents no sound
-        sample_buffer -= half_buffer_value
+        #sample_buffer -= int(mean_buffer_ema.ema_value) #np.median(sample_buffer)
+        #sample_buffer -= 1 << 15
+        sample_buffer -= buffer_median
+
+        sample_buffer[0:hamming_filter_len] = sample_buffer[0:hamming_filter_len] * hamming_filter
+        sample_buffer[len(sample_buffer)-hamming_filter_len:] = sample_buffer[len(sample_buffer)-hamming_filter_len:] * reversed_hamming_filter
+        #print(f'SB: {sample_buffer}')
 
         #Calculate the FFT (determine which frequencies compose the recording)
         power_spectrum = ulab.utils.spectrogram(sample_buffer)

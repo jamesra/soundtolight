@@ -120,7 +120,7 @@ class GraphDisplay(IDisplay):
 
             # Use the min/max values from the last loop.  We are comparing the new power spectrum to the past, not to
             # its current value.
-            min_val = self.last_min_group_power[i] #* 1.05 #Use the last min/max value before updating them
+            min_val = self.last_min_group_power[i] * 1.05 #Use the last min/max value before updating them
             max_val = self.last_max_group_power[i] * 0.99
 
             #There is some magic here.  The device exists in an environment with variable amount of noise.  We want the

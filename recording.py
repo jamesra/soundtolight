@@ -1,3 +1,4 @@
+import math
 import ulab.numpy as np
 import recording_settings
 
@@ -28,6 +29,14 @@ def get_frequency_index(frequencies: np.array,  value: float):
         max_freq_index = i
 
     return max_freq_index
+
+def calculate_hamming_filter(length: int) -> np.array[float]:
+    range = math.pi / 2.0
+    bin_width = range / length
+    filter = np.array([math.sin(x) for x in np.arange(0, range, bin_width)])
+    print(f'Hamming filter, len {length}: {filter}')
+    return filter
+
 
 def get_cutoff_frequency_index(settings: recording_settings.RecordingSettings):
     '''

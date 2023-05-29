@@ -30,7 +30,7 @@ def log_range(num_measurements: int, num_groups: int, base: float = None):
     log_bin_cutoffs = np.arange(0, num_groups+1)
     log_bin_cutoffs = log_bin_cutoffs * log_bin_spacing
     log_bin_cutoffs = np.exp(log_bin_cutoffs) if base is None else log_bin_cutoffs ** base
-    print(f'log_bin_cutoffs: {log_bin_cutoffs}')
+    #print(f'log_bin_cutoffs: {log_bin_cutoffs}')
     return log_bin_cutoffs
 
 def linear_range(num_measurements: int, num_groups: int):
@@ -169,11 +169,6 @@ def map_power_to_range(value: float, min_val: float, max_val: float, range_cutof
         return i, range_normalized_value
 
     raise ValueError("Value outside of color map range")
-
-def map_power_to_color(value: float, min_val: float, max_val: float, range_cutoffs: list[float] | None = None,  color_map: list[tuple[float]] | None = None):
-    i_range, norm_value = map_power_to_range(value, min_val, max_val)
-    return map_normalized_value_to_color(norm_value, i_range, color_map=None)
-
 
 def map_float_color_to_neopixel_color(input: tuple[float], scalar: float | None = None) -> tuple[int]:
     '''
