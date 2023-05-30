@@ -114,14 +114,14 @@ If you are using the battery place it between the female headers on the ESP32-S3
 
 [Install CircuitPython 8.1 or above on the ESP32-S3](https://learn.adafruit.com/adafruit-esp32-s3-feather/circuitpython).
 
-Copy the code from the [src](src) folder into the CIRCUITPY drive.
+Download or clone the [sourcetolight project](https://github.com/jamesra/soundtolight) project.  Copy the contents of the [src](src) folder onto the CIRCUITPY drive.  (The .py files in the src folder should be on the root of the CIRCUITPY drive.)
 
 If you have a python install on your computer open a command prompt.  Change to the CIRCUITPY drive (or the directory you cloned the source code to) and install the libraries to the ESP32-S3 
 
     pip install circup
     pip install -r requirements.txt
 
-Otherwise you'll need to [manually download the python library bundle](https://circuitpython.org/libraries) and copy over the libraries listed in the requirements.txt file.
+Otherwise you'll need to [manually download the python library bundle](https://circuitpython.org/libraries) and copy over the libraries listed in the [requirements.txt](requirements.txt) file.
 
 ### Turn on the power!
 
