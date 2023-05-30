@@ -48,14 +48,12 @@ pixels = None
 pixels_featherwing = neopixel.NeoPixel(board.D6, n=4*8, brightness=0.05, auto_write=False)
 
 display_options = (
-    GraphDisplay(pixels, display_configs["8x32 Graph"], 0),
-    WaterfallDisplay(pixels, display_configs["32x8 Waterfall"], 0),
+    #GraphDisplay(pixels, display_configs["8x32 Graph"], 0),
+    #WaterfallDisplay(pixels, display_configs["32x8 Waterfall"], 0),
     GraphDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Graph"], 0),
     WaterfallDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Waterfall"], 0),
-    GraphDisplay(pixels, display_configs["4x16 Graph"], 0)
+    #GraphDisplay(pixels, display_configs["4x16 Graph"], 0)
 )
-
-
 
 async def Run():
     #######################################################
@@ -66,7 +64,7 @@ async def Run():
     # row_indexer=reversing_row_column_indexer
     ########################################
 
-    display = display_options[2]
+    display = display_options[0]
 
     #######################################################
     # If you have a new display the functions below can
@@ -84,11 +82,10 @@ async def Run():
     mic_adc_bufferio = analogbufio.BufferedIn(MIC_PIN, sample_rate=sample_settings.sample_rate)
 
     # async tasks are a way to simplify concurrency (doing more than one set of operations).  We are asking python to
-    # read data into the microphone as a separate task from this processing the sound task.
+    # read data into the microphone as a separate task from this task which is processing the sound.
     # (Currently circuitpython is not able to run both tasks simultaneously, but hopefully tasks will be improved in
     # later versions and doing it "right" means this code will improve if better task concurrency makes it into circuit
     # python.)
-
 
     new_buffer_task = asyncio.create_task(
         record_sample_array(mic_adc_bufferio, sample_settings.sample_size, sample_rate=sample_settings.sample_rate, buffer=mic_buffer))
@@ -103,8 +100,6 @@ async def Run():
     # knob on the speaker.)
     max_buffer_ema = ema.EMA(num_samples=500, smooth=1.5)
 
-    mean_buffer_ema = ema.EMA(num_samples=1000, smooth=1.0)
-
     #The best results I obtained experimenting with this code was to have a high sampling rate (~22,000 Hertz) and then
     #eliminating high frequencies from the data.  This seems counter-intuitive, why collect the high frequencies if
     #we just throw them away?  The reason is I use a log axis for several displays.  This means more columns are devoted
@@ -112,23 +107,25 @@ async def Run():
     # a large number of samples
     # The FFT we run will give us one measurement for every sample we collect.  We want a lot of low frequency
     # information because that is where the human voice (85Hz to 255Hz)  and a lot of musical notes are.  However people can hear up
-    # to about 22,000Hz and some music uses much higher freqie
+    # to about 22,000Hz and some music uses much higher frequencies.
 
-    # The ESP32-S3 this program originally runs on could only process 1024 samples in the FFT fast enough to have a
-    # decent refresh rate. The produces information for 512 frequencies (the other 512 are essentially a mirror image
-    # of the first.  Wikipedia or another resource can explain in more depth why that is.)  T
+    # The ESP32-S3 this program originally runs on can only process 1024 samples with an FFT fast enough to have a
+    # decent refresh rate. That produces information for 512 frequencies (the other 512 are essentially a mirror image
+    # of the first.  Wikipedia or another resource can explain in more depth why that is.)
     frequencies = recording.get_frequencies(sample_settings)
     max_freq_index = recording.get_frequency_index(frequencies, sample_settings.frequency_cutoff)
-
-    hamming_filter_len = int(sample_settings.sample_size / (1 << 6))
-    hamming_filter = recording.calculate_hamming_filter(hamming_filter_len)
-    reversed_hamming_filter = hamming_filter[::-1]
-    print(f'Reverse filter: {reversed_hamming_filter}')
-
     print(f'max freq index: {max_freq_index}')
 
+    filter_len = sample_settings.sample_size >> 1 # This is a fancy divide by 2 that ensures we still have an integer
+    hanning_filter = recording.calculate_half_hanning_filter(filter_len)
+    print(f'Hanning filter, len {filter_len}: {hanning_filter}')
+    reversed_hanning_filter = hanning_filter[::-1]
+    print(f'Reverse filter: {reversed_hanning_filter}')
 
+    #Collect the first sample so we can precalculate the signal mean
     sample_buffer = np.array(await new_buffer_task)
+
+    print(f'Filter slices 0:{filter_len} {len(sample_buffer) - filter_len}:{len(sample_buffer)}')
 
     max_buffer_ema.add(np.max(sample_buffer))
 
@@ -152,21 +149,19 @@ async def Run():
         #Convert to a numpy.array
         sample_buffer = np.array(mic_buffer)
 
-        mean_buffer_ema.add(sample_buffer[0]) #Add two essentially random values from the most recent recording
-        mean_buffer_ema.add(sample_buffer[-1]) #Add two essentially random values from the most recent recording
-
         #Center the floating point sample buffer so the value of 0 represents no sound
         #sample_buffer -= int(mean_buffer_ema.ema_value) #np.median(sample_buffer)
         #sample_buffer -= 1 << 15
         sample_buffer -= buffer_median
 
-        sample_buffer[0:hamming_filter_len] = sample_buffer[0:hamming_filter_len] * hamming_filter
-        sample_buffer[len(sample_buffer)-hamming_filter_len:] = sample_buffer[len(sample_buffer)-hamming_filter_len:] * reversed_hamming_filter
+        sample_buffer[0:filter_len] = sample_buffer[0:filter_len] * hanning_filter
+        sample_buffer[len(sample_buffer)-filter_len:] = sample_buffer[len(sample_buffer)-filter_len:] * reversed_hanning_filter
         #print(f'SB: {sample_buffer}')
 
         #Calculate the FFT (determine which frequencies compose the recording)
         power_spectrum = ulab.utils.spectrogram(sample_buffer)
 
+        #Remove half of the FFT, which is mostly symmetric for this data
         displayed_power_spectrum = power_spectrum[1:max_freq_index]
 
         #Show the FFT with our chosen display

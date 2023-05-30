@@ -40,11 +40,11 @@ class GraphDisplay(IDisplay):
         self._mean_group_power_ema = []
         for i in range(0, self.num_cols):
             self._mean_group_power_ema.append(ema.EMA(500, 1.5))
-        # self.min_group_power_ema = []
-        # self.max_group_power_ema = []
-        # for i in range(0, self.num_cols):
-        #     self.min_group_power_ema.append(ema.EMA(500, 2))
-        #     self.max_group_power_ema.append(ema.EMA(500, 2))
+        self.min_group_power_ema = []
+        self.max_group_power_ema = []
+        for i in range(0, self.num_cols):
+            self.min_group_power_ema.append(ema.EMA(200, 1.5))
+            self.max_group_power_ema.append(ema.EMA(200, 1.5))
 
         #self.pixel_indexer = self.default_row_column_indexer if row_column_indexer is None else row_column_indexer
         self._range_indicies = None
@@ -118,16 +118,22 @@ class GraphDisplay(IDisplay):
 
             #print(f"iCol: {i} Power: {self._group_power[i]}")
 
+            #self.min_group_power_ema[i].add(self.last_min_group_power[i])
+            #elf.max_group_power_ema[i].add(self.last_max_group_power[i])
+
             # Use the min/max values from the last loop.  We are comparing the new power spectrum to the past, not to
             # its current value.
-            min_val = self.last_min_group_power[i] * 1.05 #Use the last min/max value before updating them
-            max_val = self.last_max_group_power[i] * 0.99
+            #min_val = self.min_group_power_ema[i].ema_value  # Use the last min/max value before updating them
+            #max_val = self.max_group_power_ema[i].ema_value * 0.99
+
+            min_val = self.last_min_group_power[i]  # Use the last min/max value before updating them
+            max_val = self.last_max_group_power[i] * 0.98
 
             #There is some magic here.  The device exists in an environment with variable amount of noise.  We want the
             #display to be relative to the ambient noise level.  So we track the min/max values, but have them slowly
             #decay to the mean power level.  We also use the current group power to adjust the min/max if they exceed
             #the current min/max values.
-            self.last_min_group_power[i] = min(self.last_min_group_power[i] * 1.0001, self._group_power[i], self._mean_group_power_ema[i].ema_value) #Slowly decay min/max
+            self.last_min_group_power[i] = min(self.last_min_group_power[i] * 1.0005, self._group_power[i], self._mean_group_power_ema[i].ema_value) #Slowly decay min/max
             self.last_max_group_power[i] = max(self.last_max_group_power[i] * .999, self._group_power[i], self._mean_group_power_ema[i].ema_value)
 
             #Rarely, (at startup), we have an identical min/max value.  For this case we do not light any column LEDs

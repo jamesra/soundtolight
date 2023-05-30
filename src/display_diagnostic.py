@@ -4,7 +4,7 @@ from display_settings import DisplaySettings
 
 def ShowLightOrder(pixels: neopixel.NeoPixel, settings: DisplaySettings, delay: float = None):
     '''
-    Turn the pixels on in order to determine how they are numbered
+    Turn the pixels on in order by index number
     :param pixels: Neopixel controller
     :param delay: Delay before each pixel lights
     '''
