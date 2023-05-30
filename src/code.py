@@ -48,14 +48,12 @@ pixels = None
 pixels_featherwing = neopixel.NeoPixel(board.D6, n=4*8, brightness=0.05, auto_write=False)
 
 display_options = (
-    GraphDisplay(pixels, display_configs["8x32 Graph"], 0),
-    WaterfallDisplay(pixels, display_configs["32x8 Waterfall"], 0),
+    #GraphDisplay(pixels, display_configs["8x32 Graph"], 0),
+    #WaterfallDisplay(pixels, display_configs["32x8 Waterfall"], 0),
     GraphDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Graph"], 0),
     WaterfallDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Waterfall"], 0),
-    GraphDisplay(pixels, display_configs["4x16 Graph"], 0)
+    #GraphDisplay(pixels, display_configs["4x16 Graph"], 0)
 )
-
-
 
 async def Run():
     #######################################################
@@ -66,7 +64,7 @@ async def Run():
     # row_indexer=reversing_row_column_indexer
     ########################################
 
-    display = display_options[2]
+    display = display_options[0]
 
     #######################################################
     # If you have a new display the functions below can
@@ -119,16 +117,18 @@ async def Run():
     # of the first.  Wikipedia or another resource can explain in more depth why that is.)  T
     frequencies = recording.get_frequencies(sample_settings)
     max_freq_index = recording.get_frequency_index(frequencies, sample_settings.frequency_cutoff)
+    print(f'max freq index: {max_freq_index}')
 
-    hamming_filter_len = int(sample_settings.sample_size / (1 << 6))
-    hamming_filter = recording.calculate_hamming_filter(hamming_filter_len)
+    hamming_filter_len = int(sample_settings.sample_size / 2)
+    hamming_filter = recording.calculate_half_hamming_filter(hamming_filter_len)
+    print(f'Hamming filter, len {hamming_filter_len}: {hamming_filter}')
     reversed_hamming_filter = hamming_filter[::-1]
     print(f'Reverse filter: {reversed_hamming_filter}')
 
-    print(f'max freq index: {max_freq_index}')
-
-
+    #Collect the first sample so we can precalculate the signal mean
     sample_buffer = np.array(await new_buffer_task)
+
+    print(f'Filter slices 0:{hamming_filter_len} {len(sample_buffer) - hamming_filter_len}:{len(sample_buffer)}')
 
     max_buffer_ema.add(np.max(sample_buffer))
 
@@ -152,9 +152,6 @@ async def Run():
         #Convert to a numpy.array
         sample_buffer = np.array(mic_buffer)
 
-        mean_buffer_ema.add(sample_buffer[0]) #Add two essentially random values from the most recent recording
-        mean_buffer_ema.add(sample_buffer[-1]) #Add two essentially random values from the most recent recording
-
         #Center the floating point sample buffer so the value of 0 represents no sound
         #sample_buffer -= int(mean_buffer_ema.ema_value) #np.median(sample_buffer)
         #sample_buffer -= 1 << 15
@@ -167,6 +164,7 @@ async def Run():
         #Calculate the FFT (determine which frequencies compose the recording)
         power_spectrum = ulab.utils.spectrogram(sample_buffer)
 
+        #Remove half of the FFT, which is mostly symmetric for this data
         displayed_power_spectrum = power_spectrum[1:max_freq_index]
 
         #Show the FFT with our chosen display

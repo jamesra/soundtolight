@@ -1,6 +1,3 @@
-from collections import namedtuple
-import neopixel
-
 class DisplaySettings():
     _num_rows: int
     _num_cols: int

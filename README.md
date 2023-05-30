@@ -100,7 +100,7 @@ This is the map for which wires to connect where
 | A1       | Out        |
 | A2       | Gain       |
 
-*Note: Recording accuracy may be improved by adding a 100nf capacitor between the GND and Vdd inputs, particularly if you are not using battery power.  The capacitor can smooth any high frequency noise in the power supply.*
+*Upgrade option: Recording accuracy may be improved by adding a 100nf capacitor between the GND and Vdd inputs, particularly if you are not using battery power.  The capacitor can smooth any high frequency noise in the power supply.*
 
 ### Assemble the unit
 
@@ -126,5 +126,10 @@ Otherwise you'll need to [manually download the python library bundle](https://c
 ### Turn on the power!
 
 Either plug in the battery or connect the USB port.  The display should initialize and start displaying spectrograms!
+
+## Optional Upgrades
+ 
+If everything is working and you want to make it 'better' check out some [upgrade ideas](docs/upgrade_ideas.md).
+
 
 

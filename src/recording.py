@@ -30,11 +30,21 @@ def get_frequency_index(frequencies: np.array,  value: float):
 
     return max_freq_index
 
-def calculate_hamming_filter(length: int) -> np.array[float]:
+def calculate_half_hamming_filter(length: int) -> np.array[float]:
+    '''
+    Calculates one half of the hamming filter.  The result can be reversed to access the other half.
+    Calculating half allows us to filter only the ends of the sample if we don't want to filter the
+    entire sample
+    :param length:
+    :return:
+    '''
     range = math.pi / 2.0
-    bin_width = range / length
-    filter = np.array([math.sin(x) for x in np.arange(0, range, bin_width)])
-    print(f'Hamming filter, len {length}: {filter}')
+    bin_width = range / (length - 1)
+    filter = np.array([math.sin(x) ** 2 for x in np.arange(0, range + bin_width, bin_width)])
+
+    if len(filter) != length:
+        raise Exception(f"Unexpected hamming filter length {len(filter)} expected {length}")
+
     return filter
 
 
