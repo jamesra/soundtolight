@@ -47,6 +47,22 @@ def calculate_half_hanning_filter(length: int) -> np.array[float]:
 
     return filter
 
+def calculate_hanning_filter(length: int) -> np.array[float]:
+    '''
+    Calculates one half of the hanning filter.  The result can be reversed to access the other half.
+    Calculating half allows us to filter only the ends of the sample if we don't want to filter the
+    entire sample
+    :param length:
+    :return:
+    '''
+    pi_over_length = math.pi / length
+    filter = np.array([math.sin(pi_over_length * x) ** 2 for x in np.arange(0, length)])
+
+    if len(filter) != length:
+        raise Exception(f"Unexpected hanning filter length {len(filter)} expected {length}")
+
+    return filter[0:length]
+
 
 def get_cutoff_frequency_index(settings: recording_settings.RecordingSettings):
     '''

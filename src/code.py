@@ -116,20 +116,21 @@ async def Run():
     max_freq_index = recording.get_frequency_index(frequencies, sample_settings.frequency_cutoff)
     print(f'max freq index: {max_freq_index}')
 
-    filter_len = sample_settings.sample_size >> 1 # This is a fancy divide by 2 that ensures we still have an integer
-    hanning_filter = recording.calculate_half_hanning_filter(filter_len)
-    print(f'Hanning filter, len {filter_len}: {hanning_filter}')
-    reversed_hanning_filter = hanning_filter[::-1]
-    print(f'Reverse filter: {reversed_hanning_filter}')
+    # filter_len = sample_settings.sample_size >> 1 # This is a fancy divide by 2 that ensures we still have an integer
+    # hanning_filter = recording.calculate_half_hanning_filter(filter_len)
+    # print(f'Hanning filter, len {filter_len}: {hanning_filter}')
+    # reversed_hanning_filter = hanning_filter[::-1]
+    # print(f'Reverse filter: {reversed_hanning_filter}')
+
+    hanning_filter = recording.calculate_hanning_filter(sample_settings.sample_size)
+    print(f'Hanning filter, len {len(hanning_filter)}: {hanning_filter}')
 
     #Collect the first sample so we can precalculate the signal mean
     sample_buffer = np.array(await new_buffer_task)
 
-    print(f'Filter slices 0:{filter_len} {len(sample_buffer) - filter_len}:{len(sample_buffer)}')
-
     max_buffer_ema.add(np.max(sample_buffer))
-
     buffer_median = int(round(np.mean(sample_buffer)))
+
     while True:
         ###################
         # Sample Collection
@@ -150,13 +151,10 @@ async def Run():
         sample_buffer = np.array(mic_buffer)
 
         #Center the floating point sample buffer so the value of 0 represents no sound
-        #sample_buffer -= int(mean_buffer_ema.ema_value) #np.median(sample_buffer)
-        #sample_buffer -= 1 << 15
         sample_buffer -= buffer_median
 
-        sample_buffer[0:filter_len] = sample_buffer[0:filter_len] * hanning_filter
-        sample_buffer[len(sample_buffer)-filter_len:] = sample_buffer[len(sample_buffer)-filter_len:] * reversed_hanning_filter
-        #print(f'SB: {sample_buffer}')
+        #Filter the window to reduce spectral leakage
+        sample_buffer *= hanning_filter
 
         #Calculate the FFT (determine which frequencies compose the recording)
         power_spectrum = ulab.utils.spectrogram(sample_buffer)

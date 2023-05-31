@@ -40,11 +40,6 @@ class GraphDisplay(IDisplay):
         self._mean_group_power_ema = []
         for i in range(0, self.num_cols):
             self._mean_group_power_ema.append(ema.EMA(500, 1.5))
-        self.min_group_power_ema = []
-        self.max_group_power_ema = []
-        for i in range(0, self.num_cols):
-            self.min_group_power_ema.append(ema.EMA(200, 1.5))
-            self.max_group_power_ema.append(ema.EMA(200, 1.5))
 
         #self.pixel_indexer = self.default_row_column_indexer if row_column_indexer is None else row_column_indexer
         self._range_indicies = None
@@ -118,13 +113,9 @@ class GraphDisplay(IDisplay):
 
             #print(f"iCol: {i} Power: {self._group_power[i]}")
 
-            #self.min_group_power_ema[i].add(self.last_min_group_power[i])
-            #elf.max_group_power_ema[i].add(self.last_max_group_power[i])
 
             # Use the min/max values from the last loop.  We are comparing the new power spectrum to the past, not to
             # its current value.
-            #min_val = self.min_group_power_ema[i].ema_value  # Use the last min/max value before updating them
-            #max_val = self.max_group_power_ema[i].ema_value * 0.99
 
             min_val = self.last_min_group_power[i]  # Use the last min/max value before updating them
             max_val = self.last_max_group_power[i] * 0.98
