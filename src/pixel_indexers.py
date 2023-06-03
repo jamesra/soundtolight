@@ -39,6 +39,16 @@ def standard_indexer(irow: int, icol: int, settings: DisplaySettings) -> int:
     # print(f'irow: {irow} icol: {icol} adjusted_icol: {adjusted_icol}')
     return (irow * settings.num_neo_cols) + icol
 
+def rows_are_columns_indexer(irow: int, icol: int, settings: DisplaySettings) -> int:
+    '''
+    Flips the column ordering.  Useful when the left side of the display should be the right
+    :param irow:
+    :param icol:
+    :return:
+    '''
+    # print(f'irow: {irow} icol: {icol} adjusted_icol: {adjusted_icol}')
+    return (icol * settings.num_neo_rows) + irow
+
 def rows_are_columns_with_alternating_column_order_indexer(irow: int, icol: int, settings: DisplaySettings) -> int:
     '''
     Flips the column ordering.  Useful when the left side of the display should be the right

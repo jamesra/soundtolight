@@ -3,6 +3,7 @@ import analogbufio
 import array
 import time
 import ulab.numpy as np
+import random
 
 async def record_sample_array(adcbuf: analogbufio.BufferedIn, sample_size: int, sample_rate: int, buffer = None):
     if buffer is None:
@@ -31,3 +32,12 @@ async def record_sample_numpy(adc: analogio.AnalogIn, sample_size: int, sample_r
     #elapsed_ns = end - start
     #print(f"Time to collect sample: {elapsed_ns / 1000000}ms sample_rate: {sample_size * (1 / (elapsed_ns / 1000000000))}")
     return buffer, min_val, max_val
+
+async def record_random_sample(sample_size: int, buffer: np.array = None):
+    if buffer is None:
+        buffer = array.array("H", [0x0000] * sample_size)
+
+    for i in range(0, sample_size):
+        buffer[i] = random.randint(0, (1 << 16) - 1)
+
+    return buffer

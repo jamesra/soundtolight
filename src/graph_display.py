@@ -7,7 +7,7 @@ import ulab.numpy as np
 from display_settings import DisplaySettings
 from spectrum_shared import map_power_to_range, map_normalized_value_to_color, linear_range,\
     map_float_color_to_neopixel_color, log_range, float_to_indicies, get_freq_powers_by_range, clip, space_indicies
-
+import display_range
 
 class GraphDisplay(IDisplay):
     pixels: neopixel.NeoPixel
@@ -34,12 +34,7 @@ class GraphDisplay(IDisplay):
         self.num_cols = settings.num_cols
         self.pixel_indexer = settings.indexer
         self.num_cutoff_groups = num_cutoff_groups
-        self.last_max_group_power = [0] * self.num_cols
-        self.last_min_group_power = [1 << 16] * self.num_cols
-
-        self._mean_group_power_ema = []
-        for i in range(0, self.num_cols):
-            self._mean_group_power_ema.append(ema.EMA(500, 1.5))
+        self._display_range = display_range.DisplayRange(self.num_cols)
 
         #self.pixel_indexer = self.default_row_column_indexer if row_column_indexer is None else row_column_indexer
         self._range_indicies = None
@@ -69,7 +64,7 @@ class GraphDisplay(IDisplay):
 
         range_indicies = float_to_indicies(range)
         range_indicies = space_indicies(range_indicies)
-        print(f"Range indicies: {range_indicies} nEntries: {len(range_indicies)}")
+        #print(f"Range indicies: {range_indicies} nEntries: {len(range_indicies)}")
         return range_indicies
 
     def show(self, power_spectrum: np.array):
@@ -89,7 +84,9 @@ class GraphDisplay(IDisplay):
         #group_power = get_log_freq_powers(power_spectrum, num_groups=self.num_total_groups)
 
         #next, write the new row of columns on the bottom row
-        #print(f"group power: {self._group_power}")
+        #print(f"group power: {self._group_power} sum: {np.sum(self._group_power)}")
+
+
         #print(f'n_groups: {len(self._group_power)} n_cutoff: {self.num_cutoff_groups}')
         #print(f'Min: {self.last_min_group_power} Max: {self.last_max_group_power}')
         for i_col in range(self.num_cutoff_groups, len(self._group_power)):
@@ -108,24 +105,14 @@ class GraphDisplay(IDisplay):
 
             if i >= len(self._range_indicies) or i >= len(self._group_power):
                 break
-
-            self._mean_group_power_ema[i].add(self._group_power[i])
-
+  
             #print(f"iCol: {i} Power: {self._group_power[i]}")
 
 
             # Use the min/max values from the last loop.  We are comparing the new power spectrum to the past, not to
             # its current value.
 
-            min_val = self.last_min_group_power[i]  # Use the last min/max value before updating them
-            max_val = self.last_max_group_power[i] * 0.98
-
-            #There is some magic here.  The device exists in an environment with variable amount of noise.  We want the
-            #display to be relative to the ambient noise level.  So we track the min/max values, but have them slowly
-            #decay to the mean power level.  We also use the current group power to adjust the min/max if they exceed
-            #the current min/max values.
-            self.last_min_group_power[i] = min(self.last_min_group_power[i] * 1.0005, self._group_power[i], self._mean_group_power_ema[i].ema_value) #Slowly decay min/max
-            self.last_max_group_power[i] = max(self.last_max_group_power[i] * .999, self._group_power[i], self._mean_group_power_ema[i].ema_value)
+            min_val, max_val = self._display_range.get_group_minmax(i)
 
             #Rarely, (at startup), we have an identical min/max value.  For this case we do not light any column LEDs
             if min_val == max_val:
@@ -160,5 +147,8 @@ class GraphDisplay(IDisplay):
                 i_pixel = col_map[i_row]
                 self.pixels[i_pixel] = (0, 0, 0)
 
+        #print(f'min: {self.last_min_group_power} max: {self.last_max_group_power}')
         #Send the all pixel values to the NeoPixel display
         self.pixels.show()
+
+        self._display_range.add(self._group_power)

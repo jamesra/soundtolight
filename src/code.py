@@ -19,6 +19,9 @@ from graph_display import GraphDisplay
 from display_settings import DisplaySettings
 from pixel_indexers import *
 
+#import adafruit_dotstar as dotstar
+
+
 # Known display configurations.
 display_configs = {
     "32x8 Waterfall": DisplaySettings(num_rows=32, num_cols=8, pixel_indexer=columns_are_rows_with_alternating_column_order_indexer, log_scale=False),
@@ -29,6 +32,10 @@ display_configs = {
                                   pixel_indexer=rows_are_columns_with_alternating_reversed_column_order_indexer,
                                   num_neo_rows=8, num_neo_cols=32,
                                   log_scale=True),
+    #"6x12 Dotstar Feather Graph": DisplaySettings(num_rows=6, num_cols=12, pixel_indexer=standard_indexer,
+    #                                              log_scale=True),
+    #"12x6 Dotstar Feather Waterfall": DisplaySettings(num_rows=12, num_cols=6, pixel_indexer=rows_are_columns_indexer,
+    #                                                  log_scale=True),
 }
 
 sampling_settings = {
@@ -44,16 +51,22 @@ sample_settings = sampling_settings["High-Mids"]
 MIC_PIN = board.A1
 
 #pixels = neopixel.NeoPixel(board.D10, n=8*32, brightness=0.05, auto_write=False)
-pixels = None
+#pixels = None
 pixels_featherwing = neopixel.NeoPixel(board.D6, n=4*8, brightness=0.05, auto_write=False)
+
+# On-board DotStar for boards including Gemma, Trinket, and ItsyBitsy
+#dots = dotstar.DotStar(board.D13, board.D11, 12*6, brightness=.05, auto_write=False)
+
 
 display_options = (
     #GraphDisplay(pixels, display_configs["8x32 Graph"], 0),
     #WaterfallDisplay(pixels, display_configs["32x8 Waterfall"], 0),
     GraphDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Graph"], 0),
     WaterfallDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Waterfall"], 0),
-    #GraphDisplay(pixels, display_configs["4x16 Graph"], 0)
+    #GraphDisplay(dots, display_configs["6x12 Dotstar Feather Graph"], 0),
+    #WaterfallDisplay(dots, display_configs["12x6 Dotstar Feather Waterfall"], 0),
 )
+
 
 async def Run():
     #######################################################
@@ -152,6 +165,8 @@ async def Run():
 
         #Center the floating point sample buffer so the value of 0 represents no sound
         sample_buffer -= buffer_median
+
+        sample_buffer /= 1 << 15
 
         #Filter the window to reduce spectral leakage
         sample_buffer *= hanning_filter

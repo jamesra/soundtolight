@@ -6,8 +6,9 @@ from display_settings import DisplaySettings
 from spectrum_shared import map_float_color_to_neopixel_color,  map_power_to_range, \
     map_normalized_value_to_color, log_range, float_to_indicies, get_freq_powers_by_range, \
     linear_range, space_indicies
+import display_range
 
-waterfall_range_cutoffs = (0.10, 0.20, 0.40, 0.60, .8, 1.0)
+waterfall_range_cutoffs = (0.05, 0.20, 0.40, 0.60, .8, 1.0)
 waterfall_base_color = ((0, 0, 0), #Red, Green, Blue weights for each range
                       (.25, 0, 0),
                       (0, .5, 0),
@@ -39,8 +40,7 @@ class WaterfallDisplay(IDisplay):
         self.num_rows = settings.num_rows
         self.num_cols = settings.num_cols
         self.num_cutoff_groups = num_cutoff_groups
-        self.last_max_group_power = [0] * self.num_cols
-        self.last_min_group_power = [1 << 16] * self.num_cols
+        self._display_range = display_range.DisplayRange(self.num_cols)
         self.pixel_indexer = settings.indexer
         self._range_indicies = None
         self._group_power = None
@@ -106,12 +106,7 @@ class WaterfallDisplay(IDisplay):
             #print(f'i: {i}')
             self._mean_group_power_ema[i].add(self._group_power[i])
             i_pixel = self.pixel_indexer(0, i, self.settings)
-            min_val = self.last_min_group_power[i]  # Use the last min/max value before updating them
-            max_val = self.last_max_group_power[i] * 0.98
-            self.last_min_group_power[i] = min(self.last_min_group_power[i] * 1.0005, self._group_power[i],
-                                               self._mean_group_power_ema[i].ema_value)  # Slowly decay min/max
-            self.last_max_group_power[i] = max(self.last_max_group_power[i] * .999, self._group_power[i],
-                                               self._mean_group_power_ema[i].ema_value)
+            min_val, max_val = self._display_range.get_group_minmax(i)
             #print(f'min: {min_val:0.3f} max: {max_val:0.3f}')
             i_range, norm_value = map_power_to_range(self._group_power[i], min_val, max_val, range_cutoffs=waterfall_range_cutoffs)
             if i_range is None:
@@ -123,3 +118,5 @@ class WaterfallDisplay(IDisplay):
                 self.pixels[i_pixel] = map_float_color_to_neopixel_color(neo_color, norm_value)
 
         self.pixels.show()
+
+        self._display_range.add(self._group_power)
