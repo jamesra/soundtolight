@@ -16,10 +16,11 @@ from sound_rec import record_sample_array, record_sample_numpy
 from basic_display import BasicDisplay
 from waterfall_display import WaterfallDisplay
 from graph_display import GraphDisplay
+from fade_display import FadeDisplay
 from display_settings import DisplaySettings
 from pixel_indexers import *
 
-#import adafruit_dotstar as dotstar
+import adafruit_dotstar as dotstar
 
 
 # Known display configurations.
@@ -32,10 +33,12 @@ display_configs = {
                                   pixel_indexer=rows_are_columns_with_alternating_reversed_column_order_indexer,
                                   num_neo_rows=8, num_neo_cols=32,
                                   log_scale=True),
-    #"6x12 Dotstar Feather Graph": DisplaySettings(num_rows=6, num_cols=12, pixel_indexer=standard_indexer,
-    #                                              log_scale=True),
-    #"12x6 Dotstar Feather Waterfall": DisplaySettings(num_rows=12, num_cols=6, pixel_indexer=rows_are_columns_indexer,
-    #                                                  log_scale=True),
+    "6x12 Dotstar Feather Graph": DisplaySettings(num_rows=6, num_cols=12, pixel_indexer=standard_indexer,
+                                                  log_scale=True),
+    "12x6 Dotstar Feather Waterfall": DisplaySettings(num_rows=12, num_cols=6, pixel_indexer=rows_are_columns_indexer,
+                                                      log_scale=True),
+    "6x12 Dotstar Feather Waterfall": DisplaySettings(num_rows=6, num_cols=12, pixel_indexer=standard_indexer,
+                                                      log_scale=True),
 }
 
 sampling_settings = {
@@ -55,7 +58,7 @@ MIC_PIN = board.A1
 pixels_featherwing = neopixel.NeoPixel(board.D6, n=4*8, brightness=0.05, auto_write=False)
 
 # On-board DotStar for boards including Gemma, Trinket, and ItsyBitsy
-#dots = dotstar.DotStar(board.D13, board.D11, 12*6, brightness=.05, auto_write=False)
+dots = dotstar.DotStar(board.D13, board.D11, 12*6, brightness=.05, auto_write=False)
 
 
 display_options = (
@@ -63,8 +66,11 @@ display_options = (
     #WaterfallDisplay(pixels, display_configs["32x8 Waterfall"], 0),
     GraphDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Graph"], 0),
     WaterfallDisplay(pixels_featherwing, display_configs["8x4 Neopixel Feather Waterfall"], 0),
-    #GraphDisplay(dots, display_configs["6x12 Dotstar Feather Graph"], 0),
-    #WaterfallDisplay(dots, display_configs["12x6 Dotstar Feather Waterfall"], 0),
+    FadeDisplay(dots, display_configs["8x4 Neopixel Feather Graph"], 0, 2.66),
+    GraphDisplay(dots, display_configs["6x12 Dotstar Feather Graph"], 0),
+    WaterfallDisplay(dots, display_configs["12x6 Dotstar Feather Waterfall"], 0),
+    WaterfallDisplay(dots, display_configs["6x12 Dotstar Feather Waterfall"], 0),
+    FadeDisplay(dots, display_configs["6x12 Dotstar Feather Graph"], 0, 2),
 )
 
 
@@ -77,7 +83,7 @@ async def Run():
     # row_indexer=reversing_row_column_indexer
     ########################################
 
-    display = display_options[0]
+    display = display_options[6]
 
     #######################################################
     # If you have a new display the functions below can
@@ -85,7 +91,7 @@ async def Run():
     # is addressing the pixels correctly
     #######################################################
     #display_diagnostic.ShowLightOrder(display.pixels, display.settings, 0.01)
-    #display_diagnostic.ShowRowColumnOrder(display.pixels, display.settings, 0.0)
+    #display_diagnostic.ShowRowColumnOrder(display.pixels, display.settings, 0.01)
     #######################################################
    
     # Initialize a region of memory to read microphone data into

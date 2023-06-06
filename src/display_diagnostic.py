@@ -10,6 +10,7 @@ def ShowLightOrder(pixels: neopixel.NeoPixel, settings: DisplaySettings, delay: 
     '''
     delay = 3.0 / float(settings.num_neos) if delay is None else delay
     for i in range(0, settings.num_neos):
+        print(f'i: {i}')
         pixels[i] = (64, 0, 0)
         pixels.show()
         time.sleep(delay)
@@ -30,6 +31,7 @@ def ShowRowColumnOrder(pixels: neopixel.NeoPixel, settings: DisplaySettings, del
     for icol in range(0, settings.num_cols):
         for irow in range(0, settings.num_rows):
             i = settings.indexer(irow, icol, settings)
+            print(f'i: {i}')
             pixels[i] = (64, 0, 0)
             pixels.show()
             time.sleep(delay)

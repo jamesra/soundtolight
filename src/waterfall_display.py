@@ -5,15 +5,15 @@ import ema
 from display_settings import DisplaySettings
 from spectrum_shared import map_float_color_to_neopixel_color,  map_power_to_range, \
     map_normalized_value_to_color, log_range, float_to_indicies, get_freq_powers_by_range, \
-    linear_range, space_indicies
+    linear_range, space_indicies, map_normalized_power_to_range
 import display_range
 
 waterfall_range_cutoffs = (0.05, 0.20, 0.40, 0.60, .8, 1.0)
 waterfall_base_color = ((0, 0, 0), #Red, Green, Blue weights for each range
                       (.25, 0, 0),
-                      (0, .5, 0),
-                      (.75, .75, 0),
-                      (0, 1, 1),
+                      (0, .25, 0),
+                      (.5, .5, 0),
+                      (0, .75, .75),
                       (1, 1, 1))
 
 class WaterfallDisplay(IDisplay):
@@ -104,11 +104,18 @@ class WaterfallDisplay(IDisplay):
         #print(f'n_groups: {len(group_power)} n_cutoff: {self.num_cutoff_groups}')
         for i in range(self.num_cutoff_groups, len(self._group_power)):
             #print(f'i: {i}')
-            self._mean_group_power_ema[i].add(self._group_power[i])
+            #self._mean_group_power_ema[i].add(self._group_power[i])
             i_pixel = self.pixel_indexer(0, i, self.settings)
-            min_val, max_val = self._display_range.get_group_minmax(i)
+            #min_val, max_val = self._display_range.get_group_minmax(i)
             #print(f'min: {min_val:0.3f} max: {max_val:0.3f}')
-            i_range, norm_value = map_power_to_range(self._group_power[i], min_val, max_val, range_cutoffs=waterfall_range_cutoffs)
+            norm_value = self._display_range.get_normalized_value(i, self._group_power[i])
+            if norm_value is None:
+                continue
+
+            i_range, norm_value = map_normalized_power_to_range(norm_value,
+                                                                range_cutoffs=waterfall_range_cutoffs)
+            #i_range, norm_value = map_power_to_range(self._group_power[i], min_val, max_val, range_cutoffs=waterfall_range_cutoffs)
+
             if i_range is None:
                 self.pixels[i_pixel] = (0, 0, 0)
             else:

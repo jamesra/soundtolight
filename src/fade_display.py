@@ -2,16 +2,17 @@ import math
 
 import neopixel
 import ema
+import pixel_ema
 import spectrum_shared
 from interfaces import IDisplay
 import ulab.numpy as np
 from display_settings import DisplaySettings
 from spectrum_shared import map_power_to_range, map_normalized_value_to_color, linear_range,\
     map_float_color_to_neopixel_color, log_range, float_to_indicies, get_freq_powers_by_range, clip, space_indicies, \
-map_normalized_power_to_range
+map_normalized_power_to_range, red_colors, green_colors, blue_colors
 import display_range
 
-class GraphDisplay(IDisplay):
+class FadeDisplay(IDisplay):
     pixels: neopixel.NeoPixel
     num_rows: int
     num_cols: int
@@ -29,7 +30,8 @@ class GraphDisplay(IDisplay):
     def num_total_groups(self) -> int:
         return self.num_visible_groups + self.num_cutoff_groups
 
-    def __init__(self, pixels: neopixel.NeoPixel, settings: DisplaySettings, num_cutoff_groups: int):
+    def __init__(self, pixels: neopixel.NeoPixel, settings: DisplaySettings, num_cutoff_groups: int, smooth_factor: float | None = None):
+        smooth_factor = 2.5 if smooth_factor is None else smooth_factor
         self.pixels = pixels
         self.settings = settings
         self.num_rows = settings.num_rows
@@ -37,6 +39,10 @@ class GraphDisplay(IDisplay):
         self.pixel_indexer = settings.indexer
         self.num_cutoff_groups = num_cutoff_groups
         self._display_range = display_range.DisplayRange(self.num_cols)
+
+        self._pixels_ema = [ema.EMA(4, smooth_factor) for i in range(self.num_cols)]
+        for i in range(self.num_cols):
+            self._pixels_ema[i].add(0)
 
         #self.pixel_indexer = self.default_row_column_indexer if row_column_indexer is None else row_column_indexer
         self._range_indicies = None
@@ -127,6 +133,14 @@ class GraphDisplay(IDisplay):
             if norm_value is None:
                 continue
 
+            #We only fade when the frequency loses power.  If it gains power we jump directly to the higher power
+            if norm_value > self._pixels_ema[i_col].ema_value:
+                self._pixels_ema[i_col].reset(norm_value)
+            else:
+                self._pixels_ema[i_col].add(norm_value)
+
+            norm_value = self._pixels_ema[i_col].ema_value
+
             #Calculate how many LEDs in the column will be illuminated
             num_leds = int(math.ceil(self.num_rows * norm_value))
             if num_leds > self.num_rows:
@@ -134,8 +148,11 @@ class GraphDisplay(IDisplay):
 
             #Convert the power to an LED color.  To do this we determine which entry in the color lookup table is used.
             #print(f'{norm_value} -> {self._range_indicies}')
+
+
             i_range, norm_value = map_normalized_power_to_range(norm_value, range_cutoffs=spectrum_shared.default_range_cutoffs)
-            neo_color = map_normalized_value_to_color(normalized_value=norm_value, colormap_index=i_range, color_map=None)
+
+            neo_color = map_normalized_value_to_color(normalized_value=norm_value, colormap_index=i_range, color_map=green_colors)
 
             #Light each pixel in the column.  Look up the pixel's index, scale top pixel brightness according to normalized
             # value and set all pixels below the top to full brightness
@@ -153,6 +170,12 @@ class GraphDisplay(IDisplay):
             for i_row in range(num_leds, self.num_rows):
                 i_pixel = col_map[i_row]
                 self.pixels[i_pixel] = (0, 0, 0)
+
+            # for i_row in range(0, self.num_rows):
+            #     i_pixel = col_map[i_row]
+            #     #print(f'{self._pixels_ema[i_pixel].ema_value}')
+            #     #print(f'{i_col},{i_row}: {self._pixels_ema[i_pixel].ema_value}')
+            #     self.pixels[i_pixel] = self._pixels_ema[i_pixel].ema_value
 
         #print(f'min: {self.last_min_group_power} max: {self.last_max_group_power}')
         #Send the all pixel values to the NeoPixel display

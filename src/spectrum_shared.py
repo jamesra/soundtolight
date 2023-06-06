@@ -7,6 +7,41 @@ except ModuleNotFoundError:
 import math
 
 
+default_range_cutoffs = (0.03, 0.2, 0.4, 0.6, .8, 1.0)
+# default_base_color = ((0, 0, 0), #Red, Green, Blue weights for each range
+#                       (1, 0, 0),
+#                       (0, 1, 0),
+#                       (1, 1, 0),
+#                       (0, 1, 1),
+#                       (1, 1, 1))
+default_base_color = ((0, 0, 0), #Red, Green, Blue weights for each range
+                       (.1, 1, .1),
+                       (.3, 1, .3),
+                       (.5, 1, .5),
+                       (.7, 1, .7),
+                       (0.9, 1, 0.9))
+green_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
+                       (.1, 1, .1),
+                       (.3, 1, .3),
+                       (.5, 1, .5),
+                       (.7, 1, .7),
+                       (0.9, 1, 0.9))
+
+red_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
+            (1, .1,  .1),
+            (1, .3,  .3),
+            (1, .5,  .5),
+            (1, .7,  .7),
+            (1, 0.9, 0.9))
+
+blue_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
+               (.1,  .1,  1),
+               (.3,  .3,  1),
+               (.5,  .5,  1),
+               (.7,  .7,  1),
+               (0.9, 0.9, 1))
+
+
 def clip(value: float, min_val: float = 0, max_val: float = 1.0) -> float:
     '''
     Returns the value, or min/max if value falls outside the provided range
@@ -95,13 +130,6 @@ def get_freq_powers_by_range(spectrum: np.ndarray, range_cutoffs: np.ndarray[int
 #               (0, 0, 1),
 #               (1, 1, 1)]
 
-default_range_cutoffs = (0.10, 0.25, 0.45, 0.65, .85, 1.0)
-default_base_color = ((0, 0, 0), #Red, Green, Blue weights for each range
-                      (1, 0, 0),
-                      (0, 1, 0),
-                      (1, 1, 0),
-                      (0, 1, 1),
-                      (1, 1, 1))
 
 def map_normalized_value_to_color(normalized_value: float, colormap_index: int, color_map: list[tuple[float]] | None = None):
     '''
@@ -130,24 +158,8 @@ def map_normalized_value_to_color(normalized_value: float, colormap_index: int, 
 
     raise ValueError("Value outside of color map range")
 
-def map_power_to_range(value: float, min_val: float, max_val: float, range_cutoffs: list[float] | None = None):
-    '''
-    Given a power, map it into a specific range.
-    :param value: value to convert to an RGB tuple
-    :param min_val: min possible value
-    :param max_val: max possible value
-    :param ranges: range cutoffs to assign a value to a colormap range
-    :return: A tuple containing the index of the range the pixel mapped into and the normalized value of the
-    pixel within that range.  For example, if the range array was [0, 5, 10] and the value 7.5 is passed, the
-    return value is (1, 0.5), indicating the value maps to the second entry in the range array and is halfway
-    through that range.
-    '''
-    range_cutoffs = default_range_cutoffs if range_cutoffs is None else range_cutoffs
-    range = max_val - min_val
-    if range == 0:
-        return 0, 0
 
-    value = (value - min_val) / range
+def map_normalized_power_to_range(value: float, range_cutoffs:  list[float] | None = None):
     #print(f'value -> {value}')
     if value < 0:
         return 0, 0
@@ -169,6 +181,27 @@ def map_power_to_range(value: float, min_val: float, max_val: float, range_cutof
         return i, range_normalized_value
 
     raise ValueError("Value outside of color map range")
+
+def map_power_to_range(value: float, min_val: float, max_val: float, range_cutoffs: list[float] | None = None):
+    '''
+    Given a power, map it into a specific range.
+    :param value: value to convert to an RGB tuple
+    :param min_val: min possible value
+    :param max_val: max possible value
+    :param ranges: range cutoffs to assign a value to a colormap range
+    :return: A tuple containing the index of the range the pixel mapped into and the normalized value of the
+    pixel within that range.  For example, if the range array was [0, 5, 10] and the value 7.5 is passed, the
+    return value is (1, 0.5), indicating the value maps to the second entry in the range array and is halfway
+    through that range.
+    '''
+    range_cutoffs = default_range_cutoffs if range_cutoffs is None else range_cutoffs
+    range = max_val - min_val
+    if range == 0:
+        return 0, 0
+
+    value = (value - min_val) / range
+    return map_normalized_power_to_range(value, range_cutoffs)
+
 
 def map_float_color_to_neopixel_color(input: tuple[float], scalar: float | None = None) -> tuple[int]:
     '''

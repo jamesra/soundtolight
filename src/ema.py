@@ -26,6 +26,7 @@ class EMA:
 
         if self._current_ema_value is None:
             scalar = self._smooth_factor / (1 + self._num_samples_collected)
+            #print(f'scalar: {self._current_value} * {scalar}')
             self._current_ema_value = self._current_value * scalar
             self._current_ema_value += self._last_ema_value * (1.0 - scalar)
 
@@ -37,3 +38,9 @@ class EMA:
         self._current_value = value
         self._current_ema_value = None
 
+    def reset(self, value: float):
+        '''Reset the EMA to the specified value'''
+        self._last_ema_value = value
+        self._num_samples_collected = self._num_samples
+        self._current_value = value
+        self._current_ema_value = value
