@@ -11,7 +11,6 @@ class DisplayRange:
         self.last_max_total_power = 0
         self.last_min_total_power = 1 << 15
         self._mean_group_power_ema = []
-        self.groups_normalized = None
         self.max_individual_group_power = None
 
 
@@ -31,18 +30,20 @@ class DisplayRange:
             raise ValueError("Expected group length to match num_groups")
 
         total_power = np.sum(group)
-        self.groups_normalized = group / total_power
-        self.max_individual_group_power = np.max(self.groups_normalized)
-        self.groups_normalized /= self.max_individual_group_power
-
         self._ema_total_power.add(total_power)
+        groups_normalized = group / self._ema_total_power.ema_value
+        self.max_individual_group_power = np.max(groups_normalized)
+
+
 
         #self.scaled_total_power = (total_power / self._ema_total_power.ema_value)
         #print(f'EMA Total Power: {self.ema_total_power.ema_value} total: {total_power}')
-        self.last_min_total_power = min(self.last_min_total_power * 1.0005, total_power,
-                                        self._ema_total_power.ema_value)  # Slowly decay min/max
-        self.last_max_total_power = max(self.last_max_total_power * .999, total_power,
+        self.last_min_total_power = min(self.last_min_total_power * 1.005, total_power,
+                                        self._ema_total_power.ema_value, 300)  # Slowly decay min/max
+        self.last_max_total_power = max(self.last_max_total_power * .995, total_power,
                                         self._ema_total_power.ema_value)
+
+        #self.last_min_total_power = max(self.last_min_total_power, 250)
         #
         #
         min_power = self.last_min_total_power
@@ -56,14 +57,28 @@ class DisplayRange:
             self.scaled_total_power = total_power / self._ema_total_power.ema_value
 
         #print(f'Scaled EMA Total: {self.scaled_total_power}')
+        #print(f'min: {min_power} max: {max_power} scaled_total_power: {self.scaled_total_power}')
 
 
 
         #print(f'Normalized power: {self.groups_normalized}')
 
-    def get_normalized_value(self, igroup, value):
+    def get_normalized_values(self, group_power):
 
-        if self.groups_normalized is None:
+        if self.max_individual_group_power is None:
             return None
 
-        return self.groups_normalized[igroup] * self.scaled_total_power
+        #print(f'gp: {group_power}\nmigp:{self.max_individual_group_power}\nstp:{self.scaled_total_power}')
+        group_power = group_power / self._ema_total_power.ema_value
+        result = (group_power / self.max_individual_group_power) * self.scaled_total_power
+        result[result > 1] = 1.0
+        result[result < 0] = 0
+        return result\
+
+    def get_normalized_value(self, igroup, value):
+
+        if self.max_individual_group_power is None:
+            return None
+
+        value = value / self._ema_total_power.ema_value
+        return (value / self.max_individual_group_power) * self.scaled_total_power

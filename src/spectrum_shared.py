@@ -8,38 +8,6 @@ import math
 
 
 default_range_cutoffs = (0.03, 0.2, 0.4, 0.6, .8, 1.0)
-# default_base_color = ((0, 0, 0), #Red, Green, Blue weights for each range
-#                       (1, 0, 0),
-#                       (0, 1, 0),
-#                       (1, 1, 0),
-#                       (0, 1, 1),
-#                       (1, 1, 1))
-default_base_color = ((0, 0, 0), #Red, Green, Blue weights for each range
-                       (.1, 1, .1),
-                       (.3, 1, .3),
-                       (.5, 1, .5),
-                       (.7, 1, .7),
-                       (0.9, 1, 0.9))
-green_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
-                       (.1, 1, .1),
-                       (.3, 1, .3),
-                       (.5, 1, .5),
-                       (.7, 1, .7),
-                       (0.9, 1, 0.9))
-
-red_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
-            (1, .1,  .1),
-            (1, .3,  .3),
-            (1, .5,  .5),
-            (1, .7,  .7),
-            (1, 0.9, 0.9))
-
-blue_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
-               (.1,  .1,  1),
-               (.3,  .3,  1),
-               (.5,  .5,  1),
-               (.7,  .7,  1),
-               (0.9, 0.9, 1))
 
 
 def clip(value: float, min_val: float = 0, max_val: float = 1.0) -> float:
@@ -65,7 +33,6 @@ def log_range(num_measurements: int, num_groups: int, base: float = None):
     log_bin_cutoffs = np.arange(0, num_groups+1)
     log_bin_cutoffs = log_bin_cutoffs * log_bin_spacing
     log_bin_cutoffs = np.exp(log_bin_cutoffs) if base is None else log_bin_cutoffs ** base
-    #print(f'log_bin_cutoffs: {log_bin_cutoffs}')
     return log_bin_cutoffs
 
 def linear_range(num_measurements: int, num_groups: int):
@@ -131,7 +98,7 @@ def get_freq_powers_by_range(spectrum: np.ndarray, range_cutoffs: np.ndarray[int
 #               (1, 1, 1)]
 
 
-def map_normalized_value_to_color(normalized_value: float, colormap_index: int, color_map: list[tuple[float]] | None = None):
+def map_normalized_value_to_color(normalized_value: float, colormap_index: int, color_map: list[tuple[float]]):
     '''
 
     :param value: value to convert to an RGB tuple
@@ -147,10 +114,6 @@ def map_normalized_value_to_color(normalized_value: float, colormap_index: int, 
     if normalized_value is None:
         raise ValueError('normalized_value must not be None')
 
-    color_map = default_base_color if color_map is None else color_map
-    if colormap_index >= len(color_map):
-        raise ValueError("Number of range_cutoffs and number of color_map entries must match.")
-
     #Return a tuple for the normalized value, multiply each entry in the tuple by the color map
     return (normalized_value * color_map[colormap_index][0],
            normalized_value * color_map[colormap_index][1],
@@ -159,23 +122,31 @@ def map_normalized_value_to_color(normalized_value: float, colormap_index: int, 
     raise ValueError("Value outside of color map range")
 
 
+def map_normalized_powers_to_range(values: float, range_deltas:  list[float] | None = None):
+
+    #lookup_table = np.vstack((np.array(range(len(values))), values)
+    for i in range(len(range_deltas)):
+        lookup_table[:,1] -= range_deltas[i]
+        for value in np.where(lookup_table[:,1] <= 0):
+            print(f'value: {value}')
+
 def map_normalized_power_to_range(value: float, range_cutoffs:  list[float] | None = None):
-    #print(f'value -> {value}')
-    if value < 0:
-        return 0, 0
-
-    if value > 1.0:
-        return len(range_cutoffs) - 1, 1.0
-
+    # i = np.argmax(range_cutoffs > value)
+    # min_val = 0 if i - 1 < 0 else range_cutoffs[i-1]
+    # #print(f'{value} -> {range_cutoffs} -> {i}')
+    # range_normalized_value = (value - min_val) / (range_cutoffs[i] - min_val)
+    # #print(f'v: {value} i: {i} v: {value - min_val} r: {range_cutoffs[i] - min_val}')
+    # return i, range_normalized_value
+    #
     for i, cutoff in enumerate(range_cutoffs):
         if value > cutoff:
             continue
 
         # Normalize where this value lives in the range and represent it as a number between 0 and 1.
         # For example, if the range is 3 to 9, and the value is 6, the normalized_value is 0.5.
-
-        range_normalized_value = (value - range_cutoffs[i-1]) / (range_cutoffs[i] - range_cutoffs[i-1])
-        #print(f'v: {value - range_cutoffs[i-1]} r: {range_cutoffs[i] - range_cutoffs[i-1]}')
+        min_val = 0 if i - 1 < 0 else range_cutoffs[i-1]
+        range_normalized_value = (value - min_val) / (range_cutoffs[i] - min_val)
+        #print(f'v: {value} i: {i} v: {value - min_val} r: {range_cutoffs[i] - min_val}')
 
         #Return a tuple for the normalized value, multiply each entry in the tuple by the color map
         return i, range_normalized_value
@@ -221,9 +192,18 @@ def map_float_color_to_neopixel_color(input: tuple[float], scalar: float | None 
     return c
 
 if __name__ == '__main__':
+    # freq = np.arange(0, 1000, 20)
+    # print(f'num freq: {len(freq)}')
+    # log_indicies = log_range(len(freq), 8, 2)
+    # print(f'log indicies: {log_indicies}')
+    # range_indicies = float_to_indicies(log_indicies)
+    # print(f'range indicies: {range_indicies}')
+    # si = space_indicies(range_indicies)
+    # print(f'spaced indicies: {si}')
+
     freq = np.arange(0, 1000, 20)
     print(f'num freq: {len(freq)}')
-    log_indicies = log_range(len(freq), 8, 2)
+    log_indicies = log_range(len(freq), 128)
     print(f'log indicies: {log_indicies}')
     range_indicies = float_to_indicies(log_indicies)
     print(f'range indicies: {range_indicies}')

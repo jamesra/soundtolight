@@ -43,4 +43,7 @@ class DisplaySettings():
         self._indexer = pixel_indexer
         self._log_scale = log_scale
 
+    def __str__(self):
+        return f'cols: {self.num_cols} rows: {self.num_rows} log: {self.log_scale} neo_cols: {self.num_neo_cols} neo_rows: {self.num_neo_rows}'
+
 
