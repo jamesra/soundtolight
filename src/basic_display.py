@@ -9,6 +9,7 @@ from display_settings import DisplaySettings
 import colormap
 from standard_colormaps import default_colormap
 import display_range
+import simple_display_range
 
 class BasicDisplay(IDisplay):
     last_min_group_power: float
@@ -43,7 +44,7 @@ class BasicDisplay(IDisplay):
     def __init__(self, pixels: neopixel.NeoPixel, settings: DisplaySettings, num_cutoff_groups: int = 0, cmap: colormap.ColorMap | None = None):
         self.pixels = pixels
         self.settings = settings
-        self._display_range = display_range.DisplayRange(settings.num_cols * settings.num_rows)
+        self._display_range = simple_display_range.SimpleDisplayRange(settings.num_cols * settings.num_rows)
         self.num_cutoff_groups = num_cutoff_groups
         self._group_power = None
         self._colormap = cmap if cmap is not None else default_colormap

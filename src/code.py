@@ -1,4 +1,6 @@
 # This is a sample Python script.
+import time
+import math
 
 import asyncio
 import board
@@ -61,12 +63,13 @@ sampling_settings = {
 
 sample_settings = sampling_settings["Mids"]
 
-MIC_PIN = board.A1
+MIC_PIN = board.A5
 
 purple_colormap = ColorMap(standard_colormaps.purple_colors, standard_colormaps.default_graph_cutoffs)
 green_colormap = ColorMap(standard_colormaps.green_colors, standard_colormaps.default_graph_cutoffs)
 red_colormap = ColorMap(standard_colormaps.red_colors, standard_colormaps.default_graph_cutoffs)
 rainbow_colormap = ColorMap(standard_colormaps.default_colors, standard_colormaps.default_graph_cutoffs)
+rainbow_basic_colormap = ColorMap(standard_colormaps.default_colors, standard_colormaps.default_basic_cutoffs)
 
 
 
@@ -120,7 +123,7 @@ class DotStarFeatherWing:
             WaterfallDisplay(DotStarFeatherWing._dotstar, display_configs["12x6 Dotstar Feather Waterfall"]),
             WaterfallDisplay(DotStarFeatherWing._dotstar, display_configs["6x12 Dotstar Feather Waterfall"]),
             BasicDisplay(DotStarFeatherWing._dotstar, display_configs["6x12 Dotstar Feather Graph"],
-                         cmap=rainbow_colormap),
+                         cmap=rainbow_basic_colormap),
         )
 
 

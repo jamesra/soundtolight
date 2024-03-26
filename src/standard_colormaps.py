@@ -2,6 +2,7 @@ from colormap import ColorMap
 
 default_graph_cutoffs = (0.03, 0.2, 0.4, 0.6, .8, 1.0)
 default_waterfall_cutoffs = (0.05, 0.20, 0.40, 0.60, .8, 1.0)
+default_basic_cutoffs = (0.1, 0.30, 0.50, 0.70, .85, 1.0)
 
 default_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
                   (0.2, 0, 0),

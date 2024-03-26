@@ -10,14 +10,14 @@ class DisplayRange:
         self.num_groups = num_groups
         self.last_max_total_power = 0
         self.last_min_total_power = 1 << 15
-        self._mean_group_power_ema = []
+        #self._mean_group_power_ema = []
         self.max_individual_group_power = None
 
 
         self._ema_total_power = ema.EMA(500, 1.1)
 
-        for i in range(0, num_groups):
-            self._mean_group_power_ema.append(ema.EMA(500, 1.5))
+        #for i in range(0, num_groups):
+            #self._mean_group_power_ema.append(ema.EMA(500, 1.5))
 
     def add(self, group):
         '''
@@ -43,6 +43,10 @@ class DisplayRange:
         self.last_max_total_power = max(self.last_max_total_power * .995, total_power,
                                         self._ema_total_power.ema_value)
 
+        if self.last_min_total_power < 200:
+            self.last_min_total_power = 200
+
+
         #self.last_min_total_power = max(self.last_min_total_power, 250)
         #
         #
@@ -63,7 +67,7 @@ class DisplayRange:
 
         #print(f'Normalized power: {self.groups_normalized}')
 
-    def get_normalized_values(self, group_power):
+    def get_normalized_values(self, group_power: np.ndarray[float]):
 
         if self.max_individual_group_power is None:
             return None
@@ -73,7 +77,7 @@ class DisplayRange:
         result = (group_power / self.max_individual_group_power) * self.scaled_total_power
         result[result > 1] = 1.0
         result[result < 0] = 0
-        return result\
+        return result
 
     def get_normalized_value(self, igroup, value):
 

@@ -7,6 +7,7 @@ from spectrum_shared import map_float_color_to_neopixel_color,  map_power_to_ran
     map_normalized_value_to_color, log_range, float_to_indicies, get_freq_powers_by_range, \
     linear_range, space_indicies, map_normalized_power_to_range
 import display_range
+import simple_display_range
 import colormap
 from standard_colormaps import default_waterfall_colormap
 
@@ -35,7 +36,7 @@ class WaterfallDisplay(IDisplay):
         self.num_rows = settings.num_rows
         self.num_cols = settings.num_cols
         self._colormap = cmap if cmap is not None else default_waterfall_colormap
-        self._display_range = display_range.DisplayRange(self.num_cols)
+        self._display_range = simple_display_range.SimpleDisplayRange(self.num_cols)
         self.pixel_indexer = settings.indexer
         self._range_indicies = None
         self._group_power = None

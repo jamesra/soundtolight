@@ -70,7 +70,7 @@ def space_indicies(input: np.array):
 
     return spaced_input
 
-def get_freq_powers_by_range(spectrum: np.ndarray, range_cutoffs: np.ndarray[int], out: np.ndarray[float] | None = None):
+def get_freq_powers_by_range(spectrum: np.ndarray[float], range_cutoffs: np.ndarray[int], out: np.ndarray[float] | None = None):
     '''
     Using a pre-calculated set of indicies for each range return the summed power for each group
     :param spectrum:
@@ -78,7 +78,7 @@ def get_freq_powers_by_range(spectrum: np.ndarray, range_cutoffs: np.ndarray[int
     :param out:
     :return:
     '''
-    num_groups = len(range_cutoffs) - 1
+    num_groups = range_cutoffs.shape[0] - 1
     if out is None:
         out = np.zeros((num_groups))  # Create a place to store the sum'ed power of each frequency range
     elif len(out) != num_groups:

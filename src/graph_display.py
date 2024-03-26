@@ -10,6 +10,7 @@ from spectrum_shared import map_power_to_range, map_normalized_value_to_color, l
     map_float_color_to_neopixel_color, log_range, float_to_indicies, get_freq_powers_by_range, clip, space_indicies, \
     map_normalized_power_to_range
 import display_range
+import simple_display_range
 import colormap
 from standard_colormaps import default_colormap
 
@@ -44,7 +45,7 @@ class GraphDisplay(IDisplay):
         self.pixels = pixels
         self.settings = settings
         self.pixel_indexer = settings.indexer
-        self._display_range = display_range.DisplayRange(self.num_cols)
+        self._display_range = simple_display_range.SimpleDisplayRange(self.num_cols)
         self._colormap = cmap if cmap is not None else default_colormap
 
         # self.pixel_indexer = self.default_row_column_indexer if row_column_indexer is None else row_column_indexer

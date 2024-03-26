@@ -12,6 +12,7 @@ from spectrum_shared import map_power_to_range, map_normalized_value_to_color, l
     map_normalized_power_to_range
 from standard_colormaps import red_colors, green_colors, blue_colors
 import display_range
+import simple_display_range
 import colormap
 from standard_colormaps import default_colormap
 
@@ -52,7 +53,7 @@ class FadeDisplay(IDisplay):
         smooth_factor = 2.5 if smooth_factor is None else smooth_factor
         self.pixels = pixels
         self.settings = settings
-        self._display_range = display_range.DisplayRange(settings.num_cols)
+        self._display_range = simple_display_range.SimpleDisplayRange(settings.num_cols)
         self._colormap = cmap if cmap is not None else default_colormap
 
         self._pixels_ema = [ema.EMA(smooth_samples, smooth_factor) for i in range(self.num_cols)]
