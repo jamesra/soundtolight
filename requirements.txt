@@ -1,3 +1,4 @@
 neopixel==6.3.8
 adafruit_ticks==1.0.9
 asyncio==0.5.19
+adafruit_dotstar
