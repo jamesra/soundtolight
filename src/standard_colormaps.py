@@ -12,10 +12,10 @@ default_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
                   (1, 1, 1))
 
 green_colors = ((0, 0, 0), #Red, Green, Blue weights for each range
-                (.1, 1, .1),
-                (.25, 1, .25),
-                (.40, 1, .40),
-                (.55, 1, .55),
+                (0, .5, 0),
+                (.15, .6, .15),
+                (.30, .7, .30),
+                (.55, .85, .55),
                 (0.95, 1, 0.95))
 
 red_colors = ((0, 0, 0), #Red, Green, Blue weights for each range

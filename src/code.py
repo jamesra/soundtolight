@@ -66,6 +66,7 @@ sample_settings = sampling_settings["Mids"]
 MIC_PIN = board.A5
 
 purple_colormap = ColorMap(standard_colormaps.purple_colors, standard_colormaps.default_graph_cutoffs)
+purple_basic_colormap = ColorMap(standard_colormaps.purple_colors, standard_colormaps.default_basic_cutoffs)
 green_colormap = ColorMap(standard_colormaps.green_colors, standard_colormaps.default_graph_cutoffs)
 red_colormap = ColorMap(standard_colormaps.red_colors, standard_colormaps.default_graph_cutoffs)
 rainbow_colormap = ColorMap(standard_colormaps.default_colors, standard_colormaps.default_graph_cutoffs)
@@ -122,8 +123,11 @@ class DotStarFeatherWing:
                         smooth_factor=2.5, smooth_samples=4),
             WaterfallDisplay(DotStarFeatherWing._dotstar, display_configs["12x6 Dotstar Feather Waterfall"]),
             WaterfallDisplay(DotStarFeatherWing._dotstar, display_configs["6x12 Dotstar Feather Waterfall"]),
+            WaterfallDisplay(DotStarFeatherWing._dotstar, display_configs["6x12 Dotstar Feather Waterfall"], cmap=green_colormap),
             BasicDisplay(DotStarFeatherWing._dotstar, display_configs["6x12 Dotstar Feather Graph"],
-                         cmap=rainbow_basic_colormap),
+                         cmap=rainbow_colormap),
+            BasicDisplay(DotStarFeatherWing._dotstar, display_configs["6x12 Dotstar Feather Graph"],
+                         cmap=purple_basic_colormap),
         )
 
 
@@ -273,16 +277,16 @@ async def Run():
         #########################
 
         # Convert to a numpy.array
-        sample_buffer = np.array(mic_buffer)
+        sample_buffer = np.array(mic_buffer, dtype=np.float)
 
         # buffer_mean = int(round(np.mean(sample_buffer)))
         # print(f'Mean buffer value calculated as {buffer_mean}')
-
-        # Center the floating point sample buffer so the value of 0 represents no sound
+      # Center the floating point sample buffer so the value of 0 represents no sound
         sample_buffer -= buffer_mean
-        max_buffer_ema.add(np.max(sample_buffer))
+        max_buffer_ema.add(np.max((sample_buffer)))  # Technically should call abs here, but odds are this is close enough
 
         sample_buffer /= max_buffer_ema.ema_value
+        #print(f'Max buffer EMA: {max_buffer_ema.ema_value}')
 
         # Filter the window to reduce spectral leakage
         sample_buffer *= hanning_filter
